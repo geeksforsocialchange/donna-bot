@@ -1,0 +1,39 @@
+{
+  "name": "donna-bot",
+  "version": "1.0.0",
+  "description": "GFSC Community Discord Bot",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint src/",
+    "test": "node --test dist/**/*.test.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "calendar"
+  ],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.6.0",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3",
+    "googleapis": "^170.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.0.9",
+    "eslint": "^9.39.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.0"
+  }
+}

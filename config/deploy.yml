@@ -1,0 +1,45 @@
+# Kamal deployment configuration for donna-bot
+# See https://kamal-deploy.org/docs/configuration for all options
+
+service: donna-bot
+
+image: your-registry/donna-bot
+
+servers:
+  web:
+    hosts:
+      - your-server-ip
+    options:
+      # Persist SQLite database
+      volume:
+        - donna-bot-data:/app/data
+
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  clear:
+    NODE_ENV: production
+    DATABASE_PATH: /app/data/donna.db
+  secret:
+    - DISCORD_BOT_TOKEN
+    - DISCORD_GUILD_ID
+    - GOOGLE_SERVICE_ACCOUNT_KEY
+    - GOOGLE_CALENDAR_ID
+
+volumes:
+  - donna-bot-data:/app/data
+
+# No healthcheck endpoint needed for a Discord bot
+# It runs as a long-lived process
+
+builder:
+  multiarch: false
+
+# Accessories (optional - add if you want a dashboard or logs viewer)
+# accessories:
+#   ...
