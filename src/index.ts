@@ -1,20 +1,23 @@
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } from "discord.js";
+import {
+  Client,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+} from "discord.js";
 import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase } from "./db/mappings.js";
 import { bulkSyncEvents } from "./sync/eventSync.js";
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildScheduledEvents,
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildScheduledEvents],
 });
 
 async function registerCommands(): Promise<void> {
   const commands = [
     new SlashCommandBuilder()
-      .setName("sync")
+      .setName("sync-events")
       .setDescription("Manually sync all Discord events to Google Calendar"),
   ];
 
@@ -23,7 +26,7 @@ async function registerCommands(): Promise<void> {
   console.log("[Commands] Registering slash commands...");
   await rest.put(
     Routes.applicationGuildCommands(client.user!.id, config.discord.guildId),
-    { body: commands.map((c) => c.toJSON()) }
+    { body: commands.map((c) => c.toJSON()) },
   );
   console.log("[Commands] Slash commands registered");
 }
@@ -38,16 +41,29 @@ client.once("ready", async () => {
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "sync") {
-    await interaction.deferReply({ ephemeral: true });
+  if (interaction.commandName === "sync-events") {
+    console.log("[Sync] /sync command received");
     try {
+      await interaction.deferReply({ ephemeral: true });
+      console.log("[Sync] Deferred reply sent");
+    } catch (error) {
+      console.error("[Sync] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      console.log("[Sync] Fetching guild...");
       const guild = await client.guilds.fetch(config.discord.guildId);
+      console.log("[Sync] Fetching events...");
       const events = await guild.scheduledEvents.fetch();
+      console.log(`[Sync] Found ${events.size} events, syncing...`);
       const count = await bulkSyncEvents(events);
+      console.log(`[Sync] Synced ${count} events`);
       await interaction.editReply(`Synced ${count} events to Google Calendar`);
     } catch (error) {
       console.error("[Sync] Bulk sync failed:", error);
-      await interaction.editReply("Failed to sync events. Check logs for details.");
+      await interaction.editReply(
+        "Failed to sync events. Check logs for details.",
+      );
     }
   }
 });
