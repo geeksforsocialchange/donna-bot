@@ -6,14 +6,13 @@ service: donna-bot
 image: geeksforsocialchange/donna-bot
 
 servers:
-  web:
+  bot:
     hosts:
       - 77.42.37.118
     options:
       # Persist SQLite database
       volume:
         - donna-bot-data:/app/data
-    proxy: false
 
 registry:
   server: ghcr.io
