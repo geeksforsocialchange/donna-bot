@@ -119,3 +119,30 @@ export async function deleteCalendarEvent(
 
   console.log(`[GCal] Deleted event: ${googleEventId}`);
 }
+
+export interface CalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  start?: string;
+}
+
+export async function listCalendarEvents(): Promise<CalendarEvent[]> {
+  const calendar = getCalendarClient();
+
+  const response = await calendar.events.list({
+    calendarId: config.google.calendarId,
+    timeMin: new Date().toISOString(),
+    maxResults: 250,
+    singleEvents: false, // Keep recurring events as single entries
+    orderBy: "updated",
+  });
+
+  const events = response.data.items || [];
+  return events.map((e) => ({
+    id: e.id!,
+    summary: e.summary || "(no title)",
+    description: e.description || undefined,
+    start: e.start?.dateTime || e.start?.date || undefined,
+  }));
+}

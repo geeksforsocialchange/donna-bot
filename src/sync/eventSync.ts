@@ -7,9 +7,15 @@ import {
   createCalendarEvent,
   updateCalendarEvent,
   deleteCalendarEvent,
+  listCalendarEvents,
   CalendarEventInput,
 } from "../google/calendar.js";
-import { saveMapping, getMapping, deleteMapping } from "../db/mappings.js";
+import {
+  saveMapping,
+  getMapping,
+  deleteMapping,
+  getAllMappings,
+} from "../db/mappings.js";
 import { convertRecurrenceRule } from "./recurrence.js";
 
 function discordEventToCalendarInput(
@@ -127,4 +133,86 @@ export async function bulkSyncEvents(
   }
 
   return synced;
+}
+
+/**
+ * Cleanup orphaned Google Calendar events that don't have a corresponding Discord event.
+ * This handles duplicates created when both dev and prod instances sync the same events.
+ */
+export async function cleanupOrphanedEvents(
+  discordEvents: Collection<string, GuildScheduledEvent>,
+): Promise<{ deleted: number; kept: number }> {
+  // Get all Google Calendar events
+  const calendarEvents = await listCalendarEvents();
+  console.log(
+    `[Cleanup] Found ${calendarEvents.length} Google Calendar events`,
+  );
+
+  // Get all known mappings from our database
+  const mappings = getAllMappings();
+  const knownGoogleIds = new Set(mappings.map((m) => m.google_event_id));
+
+  // Build set of valid Discord event IDs (active events only)
+  const validDiscordIds = new Set<string>();
+  for (const [id, event] of discordEvents) {
+    if (
+      event.status !== GuildScheduledEventStatus.Canceled &&
+      event.status !== GuildScheduledEventStatus.Completed
+    ) {
+      validDiscordIds.add(id);
+    }
+  }
+
+  let deleted = 0;
+  let kept = 0;
+
+  for (const calEvent of calendarEvents) {
+    // Check if this calendar event contains a Discord event link
+    const discordLinkMatch = calEvent.description?.match(
+      /discord\.com\/events\/\d+\/(\d+)/,
+    );
+
+    if (!discordLinkMatch) {
+      // Not a donna-bot created event, skip
+      kept++;
+      continue;
+    }
+
+    const discordEventId = discordLinkMatch[1];
+
+    // Check if this Discord event still exists and is valid
+    if (validDiscordIds.has(discordEventId)) {
+      // Check if this is the "canonical" calendar event (in our mappings)
+      if (knownGoogleIds.has(calEvent.id)) {
+        // This is the mapped event, keep it
+        kept++;
+        continue;
+      }
+      // This is a duplicate - same Discord event but not in our mappings
+      console.log(
+        `[Cleanup] Deleting duplicate: ${calEvent.summary} (GCal: ${calEvent.id}, Discord: ${discordEventId})`,
+      );
+    } else {
+      // Discord event no longer exists or is cancelled/completed
+      console.log(
+        `[Cleanup] Deleting orphaned: ${calEvent.summary} (GCal: ${calEvent.id}, Discord: ${discordEventId})`,
+      );
+      // Also clean up the mapping if it exists
+      deleteMapping(discordEventId);
+    }
+
+    try {
+      await deleteCalendarEvent(calEvent.id);
+      deleted++;
+    } catch (error) {
+      if ((error as { code?: number }).code === 404) {
+        console.log(`[Cleanup] Already deleted: ${calEvent.id}`);
+        deleted++;
+      } else {
+        console.error(`[Cleanup] Failed to delete ${calEvent.id}:`, error);
+      }
+    }
+  }
+
+  return { deleted, kept };
 }

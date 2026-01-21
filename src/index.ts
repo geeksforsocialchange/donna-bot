@@ -7,8 +7,8 @@ import {
 } from "discord.js";
 import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
-import { initDatabase } from "./db/mappings.js";
-import { bulkSyncEvents } from "./sync/eventSync.js";
+import { initDatabase, getAllMappings } from "./db/mappings.js";
+import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildScheduledEvents],
@@ -19,6 +19,14 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("sync-events")
       .setDescription("Manually sync all Discord events to Google Calendar"),
+    new SlashCommandBuilder()
+      .setName("cleanup-calendar")
+      .setDescription(
+        "Remove duplicate/orphaned Google Calendar events not linked to Discord events",
+      ),
+    new SlashCommandBuilder()
+      .setName("list-mappings")
+      .setDescription("List all Discord → Google Calendar event mappings"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -33,6 +41,11 @@ async function registerCommands(): Promise<void> {
 
 client.once("ready", async () => {
   console.log(`[Bot] Logged in as ${client.user?.tag}`);
+  console.log(`[Bot] Environment: ${config.environment}`);
+  console.log(
+    `[Bot] Auto-sync: ${config.disableAutoSync ? "DISABLED" : "enabled"}`,
+  );
+  console.log(`[Bot] Database: ${config.databasePath}`);
   await registerCommands();
   registerEventHandlers(client);
   console.log("[Bot] Ready and listening for scheduled events");
@@ -42,18 +55,15 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "sync-events") {
-    console.log("[Sync] /sync command received");
+    console.log("[Sync] /sync-events command received");
     try {
       await interaction.deferReply({ ephemeral: true });
-      console.log("[Sync] Deferred reply sent");
     } catch (error) {
       console.error("[Sync] Failed to defer reply:", error);
       return;
     }
     try {
-      console.log("[Sync] Fetching guild...");
       const guild = await client.guilds.fetch(config.discord.guildId);
-      console.log("[Sync] Fetching events...");
       const events = await guild.scheduledEvents.fetch({
         withUserCount: false,
       });
@@ -65,6 +75,68 @@ client.on("interactionCreate", async (interaction) => {
       console.error("[Sync] Bulk sync failed:", error);
       await interaction.editReply(
         "Failed to sync events. Check logs for details.",
+      );
+    }
+  }
+
+  if (interaction.commandName === "cleanup-calendar") {
+    console.log("[Cleanup] /cleanup-calendar command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[Cleanup] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      const guild = await client.guilds.fetch(config.discord.guildId);
+      const discordEvents = await guild.scheduledEvents.fetch({
+        withUserCount: false,
+      });
+      const result = await cleanupOrphanedEvents(discordEvents);
+      console.log(
+        `[Cleanup] Deleted ${result.deleted} orphaned events, kept ${result.kept}`,
+      );
+      await interaction.editReply(
+        `Cleanup complete: deleted ${result.deleted} orphaned Google Calendar events, kept ${result.kept} valid events.`,
+      );
+    } catch (error) {
+      console.error("[Cleanup] Cleanup failed:", error);
+      await interaction.editReply(
+        "Failed to cleanup events. Check logs for details.",
+      );
+    }
+  }
+
+  if (interaction.commandName === "list-mappings") {
+    console.log("[Mappings] /list-mappings command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[Mappings] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      const mappings = getAllMappings(config.discord.guildId);
+      if (mappings.length === 0) {
+        await interaction.editReply("No event mappings found.");
+        return;
+      }
+      const lines = mappings.map(
+        (m) =>
+          `Discord: \`${m.discord_event_id}\` → GCal: \`${m.google_event_id}\``,
+      );
+      const response =
+        `**${mappings.length} event mappings:**\n` + lines.join("\n");
+      // Discord has a 2000 char limit
+      await interaction.editReply(
+        response.length > 1900
+          ? response.slice(0, 1900) + "\n... (truncated)"
+          : response,
+      );
+    } catch (error) {
+      console.error("[Mappings] List mappings failed:", error);
+      await interaction.editReply(
+        "Failed to list mappings. Check logs for details.",
       );
     }
   }
