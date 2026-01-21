@@ -25,6 +25,7 @@ RUN npm ci --omit=dev && \
     apk del python3 make g++
 
 COPY --from=builder /app/dist ./dist
+COPY config ./config
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data
