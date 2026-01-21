@@ -29,8 +29,8 @@ function discordEventToCalendarInput(
     ? event.description.replace(/\n/g, "<br>")
     : "";
   const description = eventDescription
-    ? `${eventDescription}<br><br>---<br>Discord Event: ${discordLink}`
-    : `Discord Event: ${discordLink}`;
+    ? `${eventDescription}<br><br>---<br><a href="${discordLink}">Discord Event Link</a>`
+    : `<a href="${discordLink}">Discord Event Link</a>`;
 
   // Get location from entity metadata (for external events)
   const location = event.entityMetadata?.location || undefined;
