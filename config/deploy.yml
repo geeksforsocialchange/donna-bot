@@ -34,8 +34,9 @@ env:
 volumes:
   - donna-bot-data:/app/data
 
-# No healthcheck endpoint needed for a Discord bot
-# It runs as a long-lived process
+# No HTTP server - disable kamal-proxy for this service
+proxy:
+  host: ""
 
 builder:
   arch: amd64
