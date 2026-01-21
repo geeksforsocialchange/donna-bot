@@ -5,6 +5,7 @@ import { loadFeedUrls } from "./feeds.js";
 import { parseFeed, RssEntry } from "./parser.js";
 
 const EMBED_COLOR = 0x5865f2; // Discord blurple
+const MAX_AGE_DAYS = 60; // Only post entries from the last 60 days
 
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
@@ -73,8 +74,13 @@ export async function syncFeeds(client: Client): Promise<void> {
       const feed = await parseFeed(feedUrl);
       const newEntries: RssEntry[] = [];
 
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - MAX_AGE_DAYS);
+
       for (const entry of feed.entries) {
         if (!entry.guid) continue;
+        // Skip entries older than cutoff date
+        if (entry.pubDate && entry.pubDate < cutoffDate) continue;
         if (!isEntryPosted(feedUrl, entry.guid)) {
           newEntries.push(entry);
         }
