@@ -13,6 +13,7 @@ servers:
       # Persist SQLite database
       volume:
         - donna-bot-data:/app/data
+    proxy: false
 
 registry:
   server: ghcr.io
@@ -33,10 +34,6 @@ env:
 
 volumes:
   - donna-bot-data:/app/data
-
-# No HTTP server - disable kamal-proxy for this service
-proxy:
-  host: ""
 
 builder:
   arch: amd64
