@@ -33,6 +33,7 @@ env:
     - DISCORD_GUILD_ID
     - GOOGLE_SERVICE_ACCOUNT_KEY
     - GOOGLE_CALENDAR_ID
+    - RSS_CHANNEL_ID
 
 volumes:
   - donna-bot-data:/app/data
