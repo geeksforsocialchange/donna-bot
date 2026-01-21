@@ -1,4 +1,8 @@
-import { Collection, GuildScheduledEvent, GuildScheduledEventStatus } from "discord.js";
+import {
+  Collection,
+  GuildScheduledEvent,
+  GuildScheduledEventStatus,
+} from "discord.js";
 import {
   createCalendarEvent,
   updateCalendarEvent,
@@ -8,7 +12,9 @@ import {
 import { saveMapping, getMapping, deleteMapping } from "../db/mappings.js";
 import { convertRecurrenceRule } from "./recurrence.js";
 
-function discordEventToCalendarInput(event: GuildScheduledEvent): CalendarEventInput {
+function discordEventToCalendarInput(
+  event: GuildScheduledEvent,
+): CalendarEventInput {
   const start = event.scheduledStartAt;
   if (!start) {
     throw new Error(`Event ${event.id} has no start time`);
@@ -17,9 +23,13 @@ function discordEventToCalendarInput(event: GuildScheduledEvent): CalendarEventI
   const end = event.scheduledEndAt || new Date(start.getTime() + 3600000); // Default 1 hour
 
   // Build description with Discord event link
+  // Google Calendar uses HTML for descriptions, so convert newlines to <br>
   const discordLink = `https://discord.com/events/${event.guildId}/${event.id}`;
-  const description = event.description
-    ? `${event.description}\n\n---\nDiscord Event: ${discordLink}`
+  const eventDescription = event.description
+    ? event.description.replace(/\n/g, "<br>")
+    : "";
+  const description = eventDescription
+    ? `${eventDescription}<br><br>---<br>Discord Event: ${discordLink}`
     : `Discord Event: ${discordLink}`;
 
   // Get location from entity metadata (for external events)
@@ -40,7 +50,7 @@ function discordEventToCalendarInput(event: GuildScheduledEvent): CalendarEventI
 
 export async function syncEventToCalendar(
   event: GuildScheduledEvent,
-  action: "create" | "update"
+  action: "create" | "update",
 ): Promise<void> {
   // Skip cancelled or completed events
   if (
@@ -66,7 +76,9 @@ export async function syncEventToCalendar(
   }
 }
 
-export async function deleteEventFromCalendar(discordEventId: string): Promise<void> {
+export async function deleteEventFromCalendar(
+  discordEventId: string,
+): Promise<void> {
   const mapping = getMapping(discordEventId);
 
   if (!mapping) {
@@ -79,7 +91,9 @@ export async function deleteEventFromCalendar(discordEventId: string): Promise<v
   } catch (error) {
     // Event might already be deleted from Google Calendar
     if ((error as { code?: number }).code === 404) {
-      console.log(`[Sync] Google event already deleted: ${mapping.google_event_id}`);
+      console.log(
+        `[Sync] Google event already deleted: ${mapping.google_event_id}`,
+      );
     } else {
       throw error;
     }
@@ -90,7 +104,7 @@ export async function deleteEventFromCalendar(discordEventId: string): Promise<v
 }
 
 export async function bulkSyncEvents(
-  events: Collection<string, GuildScheduledEvent>
+  events: Collection<string, GuildScheduledEvent>,
 ): Promise<number> {
   let synced = 0;
 
