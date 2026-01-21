@@ -3,12 +3,12 @@
 
 service: donna-bot
 
-image: your-registry/donna-bot
+image: geeksforsocialchange/donna-bot
 
 servers:
   web:
     hosts:
-      - your-server-ip
+      - 77.42.37.118
     options:
       # Persist SQLite database
       volume:
