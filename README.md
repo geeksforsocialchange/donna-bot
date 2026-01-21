@@ -5,6 +5,7 @@ GFSC Community Discord Bot.
 ## Features
 
 - **Discord → Google Calendar Sync**: Automatically syncs Discord scheduled events (including recurring events) to a shared Google Calendar
+- **RSS Salon**: Polls RSS feeds and posts new entries to a Discord channel. Community members can add feeds via PR to `config/rss-feeds.txt`
 
 ## Setup
 
@@ -37,6 +38,11 @@ DISCORD_BOT_TOKEN=your_bot_token
 DISCORD_GUILD_ID=your_server_id
 GOOGLE_SERVICE_ACCOUNT_KEY=base64_encoded_json
 GOOGLE_CALENDAR_ID=calendar_id@group.calendar.google.com
+
+# RSS Salon (optional)
+RSS_CHANNEL_ID=discord_channel_id
+RSS_FEEDS_PATH=./config/rss-feeds.txt
+RSS_POLL_INTERVAL_MINUTES=5
 ```
 
 ### 4. Run Locally
@@ -59,7 +65,11 @@ npm run dev
 
 ## Commands
 
-- `/sync` - Manually sync all existing Discord events to Google Calendar
+- `/sync-events` - Manually sync all existing Discord events to Google Calendar
+- `/cleanup-calendar` - Remove orphaned Google Calendar events not linked to Discord
+- `/list-mappings` - List all Discord → Google Calendar event mappings
+- `/list-feeds` - List configured RSS feeds
+- `/refresh-feeds` - Manually check RSS feeds for new entries
 
 ## How It Works
 
@@ -71,3 +81,9 @@ The bot listens for Discord Gateway events:
 Event mappings (Discord ID ↔ Google Calendar ID) are stored in a SQLite database.
 
 Recurring events are converted from Discord's recurrence rule format to Google Calendar's RRULE format.
+
+### RSS Salon
+
+The bot polls RSS feeds every 5 minutes (configurable) and posts new entries to a Discord channel as embeds. Only entries from the last 60 days are posted to avoid flooding on initial setup.
+
+To add a feed, submit a PR adding the feed URL to `config/rss-feeds.txt` (one URL per line).
