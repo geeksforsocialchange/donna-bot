@@ -54,8 +54,10 @@ client.on("interactionCreate", async (interaction) => {
       console.log("[Sync] Fetching guild...");
       const guild = await client.guilds.fetch(config.discord.guildId);
       console.log("[Sync] Fetching events...");
-      const events = await guild.scheduledEvents.fetch();
-      console.log(`[Sync] Found ${events.size} events, syncing...`);
+      const events = await guild.scheduledEvents.fetch({
+        withUserCount: false,
+      });
+      console.log(`[Sync] Found ${events.size} events`);
       const count = await bulkSyncEvents(events);
       console.log(`[Sync] Synced ${count} events`);
       await interaction.editReply(`Synced ${count} events to Google Calendar`);
@@ -66,6 +68,10 @@ client.on("interactionCreate", async (interaction) => {
       );
     }
   }
+});
+
+client.on("error", (error) => {
+  console.error("[Bot] Client error:", error);
 });
 
 async function main(): Promise<void> {

@@ -6,7 +6,10 @@ let calendarClient: calendar_v3.Calendar | null = null;
 function getCalendarClient(): calendar_v3.Calendar {
   if (calendarClient) return calendarClient;
 
-  const keyJson = Buffer.from(config.google.serviceAccountKey, "base64").toString("utf-8");
+  const keyJson = Buffer.from(
+    config.google.serviceAccountKey,
+    "base64",
+  ).toString("utf-8");
   const credentials = JSON.parse(keyJson);
 
   const auth = new google.auth.GoogleAuth({
@@ -27,7 +30,9 @@ export interface CalendarEventInput {
   recurrence?: string[];
 }
 
-export async function createCalendarEvent(event: CalendarEventInput): Promise<string> {
+export async function createCalendarEvent(
+  event: CalendarEventInput,
+): Promise<string> {
   const calendar = getCalendarClient();
 
   const eventBody: calendar_v3.Schema$Event = {
@@ -39,7 +44,9 @@ export async function createCalendarEvent(event: CalendarEventInput): Promise<st
       timeZone: "UTC",
     },
     end: {
-      dateTime: (event.end || new Date(event.start.getTime() + 3600000)).toISOString(),
+      dateTime: (
+        event.end || new Date(event.start.getTime() + 3600000)
+      ).toISOString(),
       timeZone: "UTC",
     },
   };
@@ -63,7 +70,7 @@ export async function createCalendarEvent(event: CalendarEventInput): Promise<st
 
 export async function updateCalendarEvent(
   googleEventId: string,
-  event: CalendarEventInput
+  event: CalendarEventInput,
 ): Promise<void> {
   const calendar = getCalendarClient();
 
@@ -76,7 +83,9 @@ export async function updateCalendarEvent(
       timeZone: "UTC",
     },
     end: {
-      dateTime: (event.end || new Date(event.start.getTime() + 3600000)).toISOString(),
+      dateTime: (
+        event.end || new Date(event.start.getTime() + 3600000)
+      ).toISOString(),
       timeZone: "UTC",
     },
   };
@@ -85,16 +94,22 @@ export async function updateCalendarEvent(
     eventBody.recurrence = event.recurrence;
   }
 
-  await calendar.events.update({
-    calendarId: config.google.calendarId,
-    eventId: googleEventId,
-    requestBody: eventBody,
-  });
-
-  console.log(`[GCal] Updated event: ${googleEventId}`);
+  try {
+    await calendar.events.update({
+      calendarId: config.google.calendarId,
+      eventId: googleEventId,
+      requestBody: eventBody,
+    });
+    console.log(`[GCal] Updated event: ${googleEventId}`);
+  } catch (error) {
+    console.error(`[GCal] Failed to update event ${googleEventId}:`, error);
+    throw error;
+  }
 }
 
-export async function deleteCalendarEvent(googleEventId: string): Promise<void> {
+export async function deleteCalendarEvent(
+  googleEventId: string,
+): Promise<void> {
   const calendar = getCalendarClient();
 
   await calendar.events.delete({
