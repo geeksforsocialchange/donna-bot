@@ -8,7 +8,11 @@ import {
 import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase, getAllMappings } from "./db/mappings.js";
+import { initRssDatabase } from "./db/rss.js";
 import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
+import { startRssPoller } from "./rss/poller.js";
+import { loadFeedUrls } from "./rss/feeds.js";
+import { syncFeeds } from "./rss/sync.js";
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildScheduledEvents],
@@ -27,6 +31,12 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("list-mappings")
       .setDescription("List all Discord → Google Calendar event mappings"),
+    new SlashCommandBuilder()
+      .setName("list-feeds")
+      .setDescription("List all configured RSS feeds"),
+    new SlashCommandBuilder()
+      .setName("refresh-feeds")
+      .setDescription("Manually check all RSS feeds for new entries"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -45,9 +55,13 @@ client.once("ready", async () => {
   console.log(
     `[Bot] Auto-sync: ${config.disableAutoSync ? "DISABLED" : "enabled"}`,
   );
+  console.log(
+    `[Bot] RSS sync: ${config.disableRssSync ? "DISABLED" : "enabled"}`,
+  );
   console.log(`[Bot] Database: ${config.databasePath}`);
   await registerCommands();
   registerEventHandlers(client);
+  startRssPoller(client);
   console.log("[Bot] Ready and listening for scheduled events");
 });
 
@@ -140,6 +154,56 @@ client.on("interactionCreate", async (interaction) => {
       );
     }
   }
+
+  if (interaction.commandName === "list-feeds") {
+    console.log("[RSS] /list-feeds command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[RSS] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      const feeds = loadFeedUrls();
+      if (feeds.length === 0) {
+        await interaction.editReply("No RSS feeds configured.");
+        return;
+      }
+      const lines = feeds.map((url) => `• ${url}`);
+      const response = `**${feeds.length} RSS feeds:**\n` + lines.join("\n");
+      await interaction.editReply(
+        response.length > 1900
+          ? response.slice(0, 1900) + "\n... (truncated)"
+          : response,
+      );
+    } catch (error) {
+      console.error("[RSS] List feeds failed:", error);
+      await interaction.editReply(
+        "Failed to list feeds. Check logs for details.",
+      );
+    }
+  }
+
+  if (interaction.commandName === "refresh-feeds") {
+    console.log("[RSS] /refresh-feeds command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[RSS] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      await syncFeeds(client);
+      await interaction.editReply(
+        "RSS feeds refreshed. New entries posted to channel.",
+      );
+    } catch (error) {
+      console.error("[RSS] Refresh feeds failed:", error);
+      await interaction.editReply(
+        "Failed to refresh feeds. Check logs for details.",
+      );
+    }
+  }
 });
 
 client.on("error", (error) => {
@@ -149,6 +213,7 @@ client.on("error", (error) => {
 async function main(): Promise<void> {
   console.log("[Bot] Starting donna-bot...");
   initDatabase();
+  initRssDatabase();
   await client.login(config.discord.token);
 }
 
