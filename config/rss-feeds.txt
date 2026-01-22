@@ -9,3 +9,4 @@ https://thewhitepube.co.uk/index.xml
 https://kim.town/rss.xml
 https://bodypoetic.neocities.org/feed.xml
 https://tomo.mun-tonsi.net/blog/feed.xml
+https://chrisn.xyz/feed/
