@@ -25,6 +25,13 @@ export function initRssDatabase(): void {
       UNIQUE(feed_url, entry_guid)
     );
     CREATE INDEX IF NOT EXISTS idx_rss_feed_url ON rss_posted(feed_url);
+    CREATE TABLE IF NOT EXISTS rss_feeds (
+      feed_url TEXT NOT NULL,
+      etag TEXT,
+      last_modified INTEGER DEFAULT (now()),
+      UNIQUE(feed_url)
+    );
+    CREATE INDEX IF NOT EXISTS idx_rss_feeds_feed_url ON rss_feeds(feed_url);
   `);
 
   console.log(`[RSS DB] RSS tables initialized`);
@@ -43,6 +50,26 @@ export interface RssPosted {
   entry_guid: string;
   entry_title: string | null;
   posted_at: number;
+}
+
+export interface FeedMetadata {
+  etag: string | null;
+  last_modified: number | null;
+}
+
+export function entryMetadata(feedUrl: string): FeedMetadata {
+  const stmt = getDb().prepare(`
+    SELECT etag, last_modified FROM rss_feeds WHERE feed_url = ?
+`);
+  return stmt.get(feedUrl) as FeedMetadata;
+}
+
+export function setEntryMetadata(feedUrl: string, feedMetadata: FeedMetadata) {
+  const stmt = getDb().prepare(`
+    INSERT INTO rss_feeds (feed_url, etag, last_modified)
+    VALUES (?, ?, ?)
+  `);
+  stmt.run(feedUrl, feedMetadata.etag, feedMetadata.last_modified);
 }
 
 export function isEntryPosted(feedUrl: string, entryGuid: string): boolean {
