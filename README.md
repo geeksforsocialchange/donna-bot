@@ -49,6 +49,7 @@ RSS_POLL_INTERVAL_MINUTES=5
 
 ```bash
 npm install
+npm test
 npm run dev
 ```
 
