@@ -1,4 +1,6 @@
+import { request } from 'gaxios';
 import Parser from "rss-parser";
+import { FeedMetadata, entryMetaData, setEntryMetadata } from "../db/rss.ts";
 
 const parser = new Parser({
   timeout: 10000,
@@ -23,7 +25,20 @@ export interface ParsedFeed {
 }
 
 export async function parseFeed(feedUrl: string): Promise<ParsedFeed> {
-  const feed = await parser.parseURL(feedUrl);
+  const originalMetaData = entryMetaData(feedUrl)
+  const res = await request({
+    url: feedUrl, headers: new Headers({
+      "User-Agent": "donna-bot/1.0 RSS Reader",
+      "If-Modified-Since": originalMetaData.last_modified,
+      "If-None-Match": originalMetaData.etag
+    })
+  })
+  const feed = await parser.parseString(String(res.body!));
+  const newMetaData = {
+    etag: res.headers.get('etag'),
+    last_modified: res.headers.get('last-modified')
+  } as FeedMetadata
+  setEntryMetadata(feedUrl, newMetaData);
 
   const entries: RssEntry[] = (feed.items || []).map((item) => ({
     // Use guid, or link, or title as fallback for unique identifier
