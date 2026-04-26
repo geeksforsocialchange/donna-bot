@@ -12,3 +12,4 @@ https://tomo.mun-tonsi.net/blog/feed.xml
 https://chrisn.xyz/feed/
 https://neon-ponys-noticings.ghost.io/rss/
 https://blog.davidcockson.com/index.xml
+https://honorash.substack.com/feed
