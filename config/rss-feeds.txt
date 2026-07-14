@@ -9,7 +9,6 @@ https://kim.town/rss.xml
 https://bodypoetic.neocities.org/feed.xml
 https://tomo.mun-tonsi.net/blog/feed.xml
 https://chrisn.xyz/feed/
-https://neon-ponys-noticings.ghost.io/rss/
 https://blog.davidcockson.com/index.xml
 https://honorash.substack.com/feed
 https://katescuttings.net/index.xml
