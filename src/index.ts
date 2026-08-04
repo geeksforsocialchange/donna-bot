@@ -54,13 +54,7 @@ async function registerCommands(): Promise<void> {
       ),
     new SlashCommandBuilder()
       .setName("tickets")
-      .setDescription("List your open GitHub issues in the GFSC org")
-      .addStringOption((option) =>
-        option
-          .setName("username")
-          .setDescription("GitHub username (defaults to your linked one)")
-          .setRequired(false),
-      ),
+      .setDescription("List your open GitHub issues in the GFSC org"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -263,18 +257,12 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
     try {
-      const username =
-        interaction.options.getString("username")?.trim() ||
-        getGithubLink(interaction.user.id);
+      // Only ever show the caller their own linked account, so nobody can
+      // pull up someone else's task list
+      const username = getGithubLink(interaction.user.id);
       if (!username) {
         await interaction.editReply(
-          "I don't know your GitHub username. Run `/gh-link` first, or pass a username to `/tickets`.",
-        );
-        return;
-      }
-      if (!isValidGithubUsername(username)) {
-        await interaction.editReply(
-          `\`${username.slice(0, 50)}\` doesn't look like a valid GitHub username.`,
+          "I don't know your GitHub username. Run `/gh-link <username>` first.",
         );
         return;
       }

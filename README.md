@@ -77,7 +77,7 @@ npm run dev
 - `/list-feeds` - List configured RSS feeds
 - `/refresh-feeds` - Manually check RSS feeds for new entries
 - `/gh-link <username>` - Link your GitHub username to your Discord account
-- `/tickets [username]` - List your open GitHub issues in the GFSC org (authored or assigned)
+- `/tickets` - List your open GitHub issues in the GFSC org (authored or assigned; requires `/gh-link`)
 
 ## How It Works
 
