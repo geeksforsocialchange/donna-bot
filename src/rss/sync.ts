@@ -13,6 +13,7 @@ import { parseFeed, RssEntry } from "./parser.js";
 
 const EMBED_COLOR = 0x5865f2; // Discord blurple
 const MAX_AGE_DAYS = 60; // Only post entries from the last 60 days
+const DISPLAY_TIMEZONE = "Europe/London"; // Show dates in UK time regardless of container TZ
 const FAILURE_NOTIFY_THRESHOLD = 5; // Post a channel notice after this many consecutive failures
 const MAX_BACKOFF_MS = 6 * 60 * 60 * 1000; // Never back off longer than 6 hours
 
@@ -55,7 +56,9 @@ function createEmbed(entry: RssEntry, feedTitle: string | null): EmbedBuilder {
     footerParts.push(extractDomain(entry.link));
   }
   if (entry.pubDate) {
-    footerParts.push(entry.pubDate.toLocaleDateString("en-GB"));
+    footerParts.push(
+      entry.pubDate.toLocaleDateString("en-GB", { timeZone: DISPLAY_TIMEZONE })
+    );
   }
   if (footerParts.length > 0) {
     embed.setFooter({ text: footerParts.join(" • ") });
@@ -63,6 +66,10 @@ function createEmbed(entry: RssEntry, feedTitle: string | null): EmbedBuilder {
 
   if (entry.author) {
     embed.setAuthor({ name: entry.author });
+  }
+
+  if (entry.imageUrl) {
+    embed.setImage(entry.imageUrl);
   }
 
   return embed;
