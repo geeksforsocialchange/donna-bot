@@ -23,6 +23,11 @@ export const config = {
       10,
     ),
   },
+  github: {
+    org: process.env.GITHUB_ORG || "geeksforsocialchange",
+    // Optional: raises API rate limits; public org repos work without it
+    token: process.env.GITHUB_TOKEN || "",
+  },
   databasePath: process.env.DATABASE_PATH || "./data/donna.db",
   // Environment: "production", "development", or unset (defaults to production behavior)
   environment: process.env.NODE_ENV || "production",

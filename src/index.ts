@@ -9,6 +9,12 @@ import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase, getAllMappings } from "./db/mappings.js";
 import { initRssDatabase } from "./db/rss.js";
+import { initLinksDatabase, setGithubLink, getGithubLink } from "./db/links.js";
+import {
+  fetchOpenIssues,
+  formatIssueLines,
+  isValidGithubUsername,
+} from "./github/api.js";
 import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
 import { startRssPoller } from "./rss/poller.js";
 import { loadFeedUrls } from "./rss/feeds.js";
@@ -37,6 +43,24 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("refresh-feeds")
       .setDescription("Manually check all RSS feeds for new entries"),
+    new SlashCommandBuilder()
+      .setName("gh-link")
+      .setDescription("Link your GitHub username so /tickets knows who you are")
+      .addStringOption((option) =>
+        option
+          .setName("username")
+          .setDescription("Your GitHub username")
+          .setRequired(true),
+      ),
+    new SlashCommandBuilder()
+      .setName("tickets")
+      .setDescription("List your open GitHub issues in the GFSC org")
+      .addStringOption((option) =>
+        option
+          .setName("username")
+          .setDescription("GitHub username (defaults to your linked one)")
+          .setRequired(false),
+      ),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -204,6 +228,79 @@ client.on("interactionCreate", async (interaction) => {
       );
     }
   }
+
+  if (interaction.commandName === "gh-link") {
+    console.log("[GitHub] /gh-link command received");
+    const username = interaction.options.getString("username", true).trim();
+    if (!isValidGithubUsername(username)) {
+      await interaction.reply({
+        content: `\`${username.slice(0, 50)}\` doesn't look like a valid GitHub username.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    try {
+      setGithubLink(interaction.user.id, username);
+      await interaction.reply({
+        content: `Linked you to GitHub user \`${username}\`. Run /tickets to see your open issues.`,
+        ephemeral: true,
+      });
+    } catch (error) {
+      console.error("[GitHub] Link failed:", error);
+      await interaction.reply({
+        content: "Failed to save the link. Check logs for details.",
+        ephemeral: true,
+      });
+    }
+  }
+
+  if (interaction.commandName === "tickets") {
+    console.log("[GitHub] /tickets command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[GitHub] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      const username =
+        interaction.options.getString("username")?.trim() ||
+        getGithubLink(interaction.user.id);
+      if (!username) {
+        await interaction.editReply(
+          "I don't know your GitHub username. Run `/gh-link` first, or pass a username to `/tickets`.",
+        );
+        return;
+      }
+      if (!isValidGithubUsername(username)) {
+        await interaction.editReply(
+          `\`${username.slice(0, 50)}\` doesn't look like a valid GitHub username.`,
+        );
+        return;
+      }
+      const issues = await fetchOpenIssues(username);
+      if (issues.length === 0) {
+        await interaction.editReply(
+          `No open issues for \`${username}\` in the ${config.github.org} org. Enjoy the peace!`,
+        );
+        return;
+      }
+      const lines = formatIssueLines(issues);
+      const response =
+        `**${issues.length} open issue${issues.length === 1 ? "" : "s"} for \`${username}\`:**\n` +
+        lines.join("\n");
+      await interaction.editReply(
+        response.length > 1900
+          ? response.slice(0, 1900) + "\n... (truncated)"
+          : response,
+      );
+    } catch (error) {
+      console.error("[GitHub] Tickets lookup failed:", error);
+      await interaction.editReply(
+        "Failed to fetch issues from GitHub. Check logs for details.",
+      );
+    }
+  }
 });
 
 client.on("error", (error) => {
@@ -214,6 +311,7 @@ async function main(): Promise<void> {
   console.log("[Bot] Starting donna-bot...");
   initDatabase();
   initRssDatabase();
+  initLinksDatabase();
   await client.login(config.discord.token);
 }
 
