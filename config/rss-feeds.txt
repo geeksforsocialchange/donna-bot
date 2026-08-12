@@ -12,3 +12,4 @@ https://chrisn.xyz/feed/
 https://blog.davidcockson.com/index.xml
 https://honorash.substack.com/feed
 https://katescuttings.net/index.xml
+https://sophiefrommars.substack.com/feed
