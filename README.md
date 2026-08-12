@@ -43,6 +43,11 @@ GOOGLE_CALENDAR_ID=calendar_id@group.calendar.google.com
 RSS_CHANNEL_ID=discord_channel_id
 RSS_FEEDS_PATH=./config/rss-feeds.txt
 RSS_POLL_INTERVAL_MINUTES=5
+
+# GitHub tickets (optional)
+GITHUB_ORG=geeksforsocialchange
+# Token is optional; raises API rate limits. Public repos work without it.
+GITHUB_TOKEN=
 ```
 
 ### 4. Run Locally
@@ -71,6 +76,8 @@ npm run dev
 - `/list-mappings` - List all Discord → Google Calendar event mappings
 - `/list-feeds` - List configured RSS feeds
 - `/refresh-feeds` - Manually check RSS feeds for new entries
+- `/gh-link <username>` - Link your GitHub username to your Discord account
+- `/tickets` - List your open GitHub issues in the GFSC org (authored or assigned; requires `/gh-link`)
 
 ## How It Works
 
