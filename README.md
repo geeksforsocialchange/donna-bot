@@ -6,7 +6,7 @@ GFSC Community Discord Bot.
 
 - **Discord → Google Calendar Sync**: Automatically syncs Discord scheduled events (including recurring events) to a shared Google Calendar
 - **RSS Salon**: Polls RSS feeds and posts new entries to a Discord channel. Community members can add feeds via PR to `config/rss-feeds.txt`
-- **GitHub Tickets**: `/tickets` lists your open GFSC issues, using the Discord ↔ GitHub mapping in `config/people.yml`
+- **GitHub Tickets**: `/tickets` lists open GFSC issues assigned to you, using the Discord ↔ GitHub mapping in `config/people.yml`
 
 ## Setup
 
@@ -77,7 +77,7 @@ npm run dev
 - `/list-mappings` - List all Discord → Google Calendar event mappings
 - `/list-feeds` - List configured RSS feeds
 - `/refresh-feeds` - Manually check RSS feeds for new entries
-- `/tickets` - List your open GitHub issues in the GFSC org (authored or assigned; requires an entry in `config/people.yml`)
+- `/tickets` - List open GitHub issues assigned to you in the GFSC org (requires an entry in `config/people.yml`)
 
 ## How It Works
 
@@ -98,4 +98,4 @@ To add a feed, submit a PR adding the feed URL to `config/rss-feeds.txt` (one UR
 
 ### GitHub Tickets
 
-`/tickets` looks up who you are in `config/people.yml` (a hand-maintained Discord ↔ GitHub mapping, edited by PR) and lists your open issues in the GFSC org, grouped by repo. It only ever shows the account mapped to your own Discord username.
+`/tickets` looks up who you are in `config/people.yml` (a hand-maintained Discord ↔ GitHub mapping, edited by PR) and lists open issues assigned to you in the GFSC org, grouped by repo. It only ever shows the account mapped to your own Discord username. Long lists are capped at the 50 most recently updated issues, and the reply says so.

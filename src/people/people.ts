@@ -13,7 +13,13 @@ export interface Person {
 // Invalid entries are skipped with a log line rather than crashing the bot,
 // since the file is hand-edited.
 export function parsePeople(content: string): Person[] {
-  const parsed: unknown = parse(content);
+  let parsed: unknown;
+  try {
+    parsed = parse(content);
+  } catch (error) {
+    console.error("[People] people file is not valid YAML:", error);
+    return [];
+  }
   if (parsed === null || parsed === undefined) return [];
   if (!Array.isArray(parsed)) {
     console.log("[People] people file is not a YAML list, ignoring");

@@ -10,7 +10,11 @@ import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase, getAllMappings } from "./db/mappings.js";
 import { initRssDatabase } from "./db/rss.js";
 import { getGithubUsername } from "./people/people.js";
-import { fetchOpenIssues, formatIssueLines } from "./github/api.js";
+import {
+  fetchOpenIssues,
+  formatIssueLines,
+  joinLinesWithinLimit,
+} from "./github/api.js";
 import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
 import { startRssPoller } from "./rss/poller.js";
 import { loadFeedUrls } from "./rss/feeds.js";
@@ -19,6 +23,9 @@ import { syncFeeds } from "./rss/sync.js";
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildScheduledEvents],
 });
+
+// /tickets nudges people carrying more open assignments than this
+const MAX_HEALTHY_ASSIGNED = 5;
 
 async function registerCommands(): Promise<void> {
   const commands = [
@@ -41,7 +48,7 @@ async function registerCommands(): Promise<void> {
       .setDescription("Manually check all RSS feeds for new entries"),
     new SlashCommandBuilder()
       .setName("tickets")
-      .setDescription("List your open GitHub issues in the GFSC org"),
+      .setDescription("List open GitHub issues assigned to you in the GFSC org"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -228,21 +235,23 @@ client.on("interactionCreate", async (interaction) => {
         );
         return;
       }
-      const issues = await fetchOpenIssues(username);
+      const { issues, totalCount } = await fetchOpenIssues(username);
       if (issues.length === 0) {
         await interaction.editReply(
-          `No open issues for \`${username}\` in the ${config.github.org} org. Enjoy the peace!`,
+          `No open issues assigned to \`${username}\` in the ${config.github.org} org. Enjoy the peace!`,
         );
         return;
       }
-      const lines = formatIssueLines(issues);
-      const response =
-        `**${issues.length} open issue${issues.length === 1 ? "" : "s"} for \`${username}\`:**\n` +
-        lines.join("\n");
+      const shown =
+        issues.length < totalCount
+          ? `most recently updated ${issues.length} of ${totalCount}`
+          : `${totalCount}`;
+      let header = `**${shown} open issue${totalCount === 1 ? "" : "s"} assigned to \`${username}\`:**`;
+      if (totalCount > MAX_HEALTHY_ASSIGNED) {
+        header += `\n⚠️ That's more than ${MAX_HEALTHY_ASSIGNED}. Consider finishing or unassigning a few before picking up more.`;
+      }
       await interaction.editReply(
-        response.length > 1900
-          ? response.slice(0, 1900) + "\n... (truncated)"
-          : response,
+        joinLinesWithinLimit(header, formatIssueLines(issues)),
       );
     } catch (error) {
       console.error("[GitHub] Tickets lookup failed:", error);

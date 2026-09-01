@@ -1,5 +1,7 @@
 import assert from 'assert/strict'
 import { describe, it } from 'node:test'
+import { readFileSync } from 'fs'
+import { parse as yamlParse } from 'yaml'
 import { parsePeople } from '../people.js'
 
 describe('people/people.ts parsePeople', () => {
@@ -53,5 +55,24 @@ describe('people/people.ts parsePeople', () => {
 
   it('ignores a non-list file', () => {
     assert.deepEqual(parsePeople('just a string'), []);
+  })
+
+  it('returns empty rather than throwing on malformed YAML', () => {
+    assert.deepEqual(parsePeople('- name: "unclosed'), []);
+    assert.deepEqual(parsePeople('\t- tabs are not yaml'), []);
+  })
+})
+
+describe('config/people.yml (the real file)', () => {
+  it('parses with no entries skipped', () => {
+    const content = readFileSync('./config/people.yml', 'utf-8');
+    const raw = yamlParse(content) as unknown[];
+    const people = parsePeople(content);
+    assert.ok(people.length > 0, 'expected at least one person');
+    assert.equal(
+      people.length,
+      raw.length,
+      'an entry in config/people.yml failed validation and would be silently ignored by the bot',
+    );
   })
 })
