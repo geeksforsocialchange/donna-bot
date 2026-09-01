@@ -49,6 +49,9 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("tickets")
       .setDescription("List open GitHub issues assigned to you in the GFSC org"),
+    new SlashCommandBuilder()
+      .setName("share-tickets")
+      .setDescription("Post your open GFSC issues to the channel for others to see"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -222,10 +225,15 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
-  if (interaction.commandName === "tickets") {
-    console.log("[GitHub] /tickets command received");
+  if (
+    interaction.commandName === "tickets" ||
+    interaction.commandName === "share-tickets"
+  ) {
+    console.log(`[GitHub] /${interaction.commandName} command received`);
+    // /share-tickets posts visibly to the channel; /tickets is just for you
+    const isPublic = interaction.commandName === "share-tickets";
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ ephemeral: !isPublic });
     } catch (error) {
       console.error("[GitHub] Failed to defer reply:", error);
       return;

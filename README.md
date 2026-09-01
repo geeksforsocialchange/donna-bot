@@ -80,6 +80,7 @@ npm run dev
 - `/list-feeds` - List configured RSS feeds
 - `/refresh-feeds` - Manually check RSS feeds for new entries
 - `/tickets` - List open GitHub issues assigned to you in the GFSC org (requires an entry in `config/people.yml`)
+- `/share-tickets` - The same list, posted to the channel for others to see instead of the default just-you reply
 
 ## How It Works
 
