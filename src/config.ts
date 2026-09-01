@@ -23,6 +23,15 @@ export const config = {
       10,
     ),
   },
+  people: {
+    path: process.env.PEOPLE_PATH || "./config/people.yml",
+  },
+  github: {
+    org: process.env.GITHUB_ORG || "geeksforsocialchange",
+    // Needs read access to the org's repos: private-repo issues are
+    // invisible without it, and unauthenticated search is capped at 10/min
+    token: process.env.GITHUB_TOKEN || "",
+  },
   databasePath: process.env.DATABASE_PATH || "./data/donna.db",
   // Environment: "production", "development", or unset (defaults to production behavior)
   environment: process.env.NODE_ENV || "production",

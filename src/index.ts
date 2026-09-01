@@ -9,6 +9,12 @@ import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase, getAllMappings } from "./db/mappings.js";
 import { initRssDatabase } from "./db/rss.js";
+import { getGithubUsername } from "./people/people.js";
+import {
+  fetchOpenIssues,
+  formatIssueLines,
+  joinLinesWithinLimit,
+} from "./github/api.js";
 import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
 import { startRssPoller } from "./rss/poller.js";
 import { loadFeedUrls } from "./rss/feeds.js";
@@ -17,6 +23,9 @@ import { syncFeeds } from "./rss/sync.js";
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildScheduledEvents],
 });
+
+// /tickets nudges people carrying more open assignments than this
+const MAX_HEALTHY_ASSIGNED = 5;
 
 async function registerCommands(): Promise<void> {
   const commands = [
@@ -37,6 +46,9 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("refresh-feeds")
       .setDescription("Manually check all RSS feeds for new entries"),
+    new SlashCommandBuilder()
+      .setName("tickets")
+      .setDescription("List open GitHub issues assigned to you in the GFSC org"),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -59,6 +71,11 @@ client.once("ready", async () => {
     `[Bot] RSS sync: ${config.disableRssSync ? "DISABLED" : "enabled"}`,
   );
   console.log(`[Bot] Database: ${config.databasePath}`);
+  if (!config.github.token) {
+    console.warn(
+      "[Bot] GITHUB_TOKEN not set: /tickets cannot see private repos and will return wrong results",
+    );
+  }
   await registerCommands();
   registerEventHandlers(client);
   startRssPoller(client);
@@ -201,6 +218,50 @@ client.on("interactionCreate", async (interaction) => {
       console.error("[RSS] Refresh feeds failed:", error);
       await interaction.editReply(
         "Failed to refresh feeds. Check logs for details.",
+      );
+    }
+  }
+
+  if (interaction.commandName === "tickets") {
+    console.log("[GitHub] /tickets command received");
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (error) {
+      console.error("[GitHub] Failed to defer reply:", error);
+      return;
+    }
+    try {
+      // Only ever show the caller their own account, so nobody can
+      // pull up someone else's task list
+      const username = getGithubUsername(interaction.user.username);
+      if (!username) {
+        await interaction.editReply(
+          "I don't know your GitHub username. Add yourself to `config/people.yml` in the donna-bot repo (PR welcome).",
+        );
+        return;
+      }
+      const { issues, totalCount } = await fetchOpenIssues(username);
+      if (issues.length === 0) {
+        await interaction.editReply(
+          `No open issues assigned to \`${username}\` in the ${config.github.org} org. Enjoy the peace!`,
+        );
+        return;
+      }
+      const shown =
+        issues.length < totalCount
+          ? `most recently updated ${issues.length} of ${totalCount}`
+          : `${totalCount}`;
+      let header = `**${shown} open issue${totalCount === 1 ? "" : "s"} assigned to \`${username}\`:**`;
+      if (totalCount > MAX_HEALTHY_ASSIGNED) {
+        header += `\n⚠️ That's more than ${MAX_HEALTHY_ASSIGNED}. Consider finishing or unassigning a few before picking up more.`;
+      }
+      await interaction.editReply(
+        joinLinesWithinLimit(header, formatIssueLines(issues)),
+      );
+    } catch (error) {
+      console.error("[GitHub] Tickets lookup failed:", error);
+      await interaction.editReply(
+        "Failed to fetch issues from GitHub. Check logs for details.",
       );
     }
   }

@@ -68,4 +68,7 @@ jobs:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
           GOOGLE_CALENDAR_ID: ${{ secrets.GOOGLE_CALENDAR_ID }}
           RSS_CHANNEL_ID: ${{ secrets.RSS_CHANNEL_ID }}
+          # DONNA_GITHUB_TOKEN is the bot's own token (Actions reserves the
+          # GITHUB_TOKEN secret name for its ephemeral workflow token above)
+          GITHUB_TOKEN: ${{ secrets.DONNA_GITHUB_TOKEN }}
         run: kamal deploy
