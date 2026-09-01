@@ -9,12 +9,8 @@ import { config } from "./config.js";
 import { registerEventHandlers } from "./discord/events.js";
 import { initDatabase, getAllMappings } from "./db/mappings.js";
 import { initRssDatabase } from "./db/rss.js";
-import { initLinksDatabase, setGithubLink, getGithubLink } from "./db/links.js";
-import {
-  fetchOpenIssues,
-  formatIssueLines,
-  isValidGithubUsername,
-} from "./github/api.js";
+import { getGithubUsername } from "./people/people.js";
+import { fetchOpenIssues, formatIssueLines } from "./github/api.js";
 import { bulkSyncEvents, cleanupOrphanedEvents } from "./sync/eventSync.js";
 import { startRssPoller } from "./rss/poller.js";
 import { loadFeedUrls } from "./rss/feeds.js";
@@ -43,15 +39,6 @@ async function registerCommands(): Promise<void> {
     new SlashCommandBuilder()
       .setName("refresh-feeds")
       .setDescription("Manually check all RSS feeds for new entries"),
-    new SlashCommandBuilder()
-      .setName("gh-link")
-      .setDescription("Link your GitHub username so /tickets knows who you are")
-      .addStringOption((option) =>
-        option
-          .setName("username")
-          .setDescription("Your GitHub username")
-          .setRequired(true),
-      ),
     new SlashCommandBuilder()
       .setName("tickets")
       .setDescription("List your open GitHub issues in the GFSC org"),
@@ -223,31 +210,6 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
-  if (interaction.commandName === "gh-link") {
-    console.log("[GitHub] /gh-link command received");
-    const username = interaction.options.getString("username", true).trim();
-    if (!isValidGithubUsername(username)) {
-      await interaction.reply({
-        content: `\`${username.slice(0, 50)}\` doesn't look like a valid GitHub username.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    try {
-      setGithubLink(interaction.user.id, username);
-      await interaction.reply({
-        content: `Linked you to GitHub user \`${username}\`. Run /tickets to see your open issues.`,
-        ephemeral: true,
-      });
-    } catch (error) {
-      console.error("[GitHub] Link failed:", error);
-      await interaction.reply({
-        content: "Failed to save the link. Check logs for details.",
-        ephemeral: true,
-      });
-    }
-  }
-
   if (interaction.commandName === "tickets") {
     console.log("[GitHub] /tickets command received");
     try {
@@ -257,12 +219,12 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
     try {
-      // Only ever show the caller their own linked account, so nobody can
+      // Only ever show the caller their own account, so nobody can
       // pull up someone else's task list
-      const username = getGithubLink(interaction.user.id);
+      const username = getGithubUsername(interaction.user.id);
       if (!username) {
         await interaction.editReply(
-          "I don't know your GitHub username. Run `/gh-link <username>` first.",
+          "I don't know your GitHub username. Add yourself to `config/people.yml` in the donna-bot repo (PR welcome, same as rss-feeds.txt).",
         );
         return;
       }
@@ -299,7 +261,6 @@ async function main(): Promise<void> {
   console.log("[Bot] Starting donna-bot...");
   initDatabase();
   initRssDatabase();
-  initLinksDatabase();
   await client.login(config.discord.token);
 }
 

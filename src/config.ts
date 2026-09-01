@@ -23,6 +23,9 @@ export const config = {
       10,
     ),
   },
+  people: {
+    path: process.env.PEOPLE_PATH || "./config/people.yml",
+  },
   github: {
     org: process.env.GITHUB_ORG || "geeksforsocialchange",
     // Optional: raises API rate limits; public org repos work without it
