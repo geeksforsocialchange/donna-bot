@@ -77,10 +77,13 @@ export async function fetchOpenIssues(
   };
 }
 
-// Titles are attacker-controlled text going into [text](<url>) markdown;
-// unescaped brackets break the link or let a title redirect it
-function escapeMarkdown(text: string): string {
-  return text.replace(/[\\[\]()`]/g, (c) => "\\" + c);
+// Titles are attacker-controlled text going into the [text](<url>) label.
+// Discord renders backslash escapes literally inside link labels, so
+// instead swap brackets for parens: with no ] in the label, a title can
+// neither break the link nor redirect it.
+function sanitizeLinkLabel(text: string): string {
+  const map: Record<string, string> = { "[": "(", "]": ")", "`": "'" };
+  return text.replace(/[[\]`]/g, (c) => map[c]);
 }
 
 // Discord message lines for a list of issues, grouped by repo
@@ -97,7 +100,7 @@ export function formatIssueLines(issues: GithubIssue[]): string[] {
     lines.push(`**${repo}**`);
     for (const issue of repoIssues.sort((a, b) => a.number - b.number)) {
       lines.push(
-        `• [#${issue.number} ${escapeMarkdown(issue.title)}](<${issue.htmlUrl}>)`,
+        `• [#${issue.number} ${sanitizeLinkLabel(issue.title)}](<${issue.htmlUrl}>)`,
       );
     }
   }

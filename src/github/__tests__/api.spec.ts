@@ -48,13 +48,22 @@ describe('github/api.ts formatIssueLines', () => {
     assert.match(lines[1], /\(<https:\/\/github\.com\/org\/repo\/issues\/1>\)/);
   })
 
-  it('escapes markdown metacharacters in titles', () => {
-    // A crafted title must not be able to break out of the link text
+  it('sanitizes brackets in titles so they cannot break the link', () => {
+    // Discord renders backslash escapes literally inside link labels, so
+    // brackets are swapped for parens instead of escaped
     const lines = formatIssueLines([
       issue({ title: 'x](https://evil.example) pwned [y' }),
     ]);
-    assert.match(lines[1], /\\\]\\\(https:\/\/evil\.example\\\) pwned \\\[y/);
-    assert.doesNotMatch(lines[1], /[^\\]\]\(https:\/\/evil/);
+    const label = lines[1].slice(0, lines[1].indexOf('](<'));
+    assert.ok(!label.includes(']'), `label still contains ]: ${label}`);
+    assert.ok(!label.includes('\\'), `label contains backslashes: ${label}`);
+    assert.match(lines[1], /x\)\(https:\/\/evil\.example\) pwned \(y/);
+  })
+
+  it('renders a plain [Article] tag as (Article) with no backslashes', () => {
+    const lines = formatIssueLines([issue({ title: '[Article] Some piece' })]);
+    assert.match(lines[1], /#1 \(Article\) Some piece/);
+    assert.ok(!lines[1].includes('\\'));
   })
 })
 
