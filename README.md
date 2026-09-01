@@ -79,7 +79,7 @@ npm run dev
 - `/list-mappings` - List all Discord → Google Calendar event mappings
 - `/list-feeds` - List configured RSS feeds
 - `/refresh-feeds` - Manually check RSS feeds for new entries
-- `/tickets` - List open GitHub issues assigned to you in the GFSC org (requires an entry in `config/people.yml`)
+- `/tickets` - List open GitHub issues assigned to you in the GFSC org (requires an entry in `config/people.yml`); pass `public:True` to share the list with the channel instead of the default just-you reply
 
 ## How It Works
 

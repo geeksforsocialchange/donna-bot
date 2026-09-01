@@ -48,7 +48,13 @@ async function registerCommands(): Promise<void> {
       .setDescription("Manually check all RSS feeds for new entries"),
     new SlashCommandBuilder()
       .setName("tickets")
-      .setDescription("List open GitHub issues assigned to you in the GFSC org"),
+      .setDescription("List open GitHub issues assigned to you in the GFSC org")
+      .addBooleanOption((option) =>
+        option
+          .setName("public")
+          .setDescription("Share the list with the channel instead of just you")
+          .setRequired(false),
+      ),
   ];
 
   const rest = new REST().setToken(config.discord.token);
@@ -224,8 +230,9 @@ client.on("interactionCreate", async (interaction) => {
 
   if (interaction.commandName === "tickets") {
     console.log("[GitHub] /tickets command received");
+    const isPublic = interaction.options.getBoolean("public") ?? false;
     try {
-      await interaction.deferReply({ ephemeral: true });
+      await interaction.deferReply({ ephemeral: !isPublic });
     } catch (error) {
       console.error("[GitHub] Failed to defer reply:", error);
       return;
