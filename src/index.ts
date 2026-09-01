@@ -221,7 +221,7 @@ client.on("interactionCreate", async (interaction) => {
     try {
       // Only ever show the caller their own account, so nobody can
       // pull up someone else's task list
-      const username = getGithubUsername(interaction.user.id);
+      const username = getGithubUsername(interaction.user.username);
       if (!username) {
         await interaction.editReply(
           "I don't know your GitHub username. Add yourself to `config/people.yml` in the donna-bot repo (PR welcome, same as rss-feeds.txt).",

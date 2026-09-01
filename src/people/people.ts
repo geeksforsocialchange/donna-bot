@@ -5,11 +5,11 @@ import { isValidGithubUsername } from "../github/api.js";
 
 export interface Person {
   name: string;
-  discordId: string;
+  discord: string;
   github: string;
 }
 
-// Parse the people.yml format: a YAML list of {name, discord_id, github}.
+// Parse the people.yml format: a YAML list of {name, discord, github}.
 // Invalid entries are skipped with a log line rather than crashing the bot,
 // since the file is hand-edited.
 export function parsePeople(content: string): Person[] {
@@ -23,12 +23,10 @@ export function parsePeople(content: string): Person[] {
   const people: Person[] = [];
   for (const entry of parsed) {
     if (!entry || typeof entry !== "object") continue;
-    const { name, discord_id, github } = entry as Record<string, unknown>;
-    if (typeof discord_id !== "string") {
-      // Unquoted Discord IDs parse as numbers and lose precision (they
-      // exceed 2^53), so only quoted strings are accepted
+    const { name, discord, github } = entry as Record<string, unknown>;
+    if (typeof discord !== "string" || discord.trim() === "") {
       console.log(
-        `[People] Skipping entry with missing or unquoted discord_id: ${JSON.stringify(entry)}`,
+        `[People] Skipping entry with missing discord username: ${JSON.stringify(entry)}`,
       );
       continue;
     }
@@ -40,7 +38,7 @@ export function parsePeople(content: string): Person[] {
     }
     people.push({
       name: typeof name === "string" ? name : github,
-      discordId: discord_id,
+      discord: discord.trim(),
       github,
     });
   }
@@ -57,7 +55,12 @@ export function loadPeople(): Person[] {
 }
 
 // Re-read on every lookup: the file is tiny and this picks up edits
-// without a restart when running under tsx/dev
-export function getGithubUsername(discordId: string): string | null {
-  return loadPeople().find((p) => p.discordId === discordId)?.github ?? null;
+// without a restart when running under tsx/dev.
+// Case-insensitive: Discord usernames are lowercase, but be forgiving
+// about how people write them in the file.
+export function getGithubUsername(discordUsername: string): string | null {
+  const wanted = discordUsername.toLowerCase();
+  return (
+    loadPeople().find((p) => p.discord.toLowerCase() === wanted)?.github ?? null
+  );
 }

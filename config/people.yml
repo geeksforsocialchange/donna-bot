@@ -2,16 +2,13 @@
 # /tickets uses this to work out whose issues to fetch.
 #
 # Add yourself (or anyone else) via PR, same as rss-feeds.txt.
-#
-# discord_id MUST be quoted: Discord IDs are 64-bit numbers and lose
-# precision if YAML parses them as numbers. To find yours: Discord
-# Settings → Advanced → enable Developer Mode, then right-click your
-# name → Copy User ID.
-#
+# "discord" is your Discord username (the unique lowercase one,
+# not your display name / nickname).
+
 - name: Kim
-  discord_id: "534700259708895244"
+  discord: kimadactyl
   github: kimadactyl
 
 - name: Ben
-  discord_id: "445362715733524501"
+  discord: benjamilian
   github: benjamilian
