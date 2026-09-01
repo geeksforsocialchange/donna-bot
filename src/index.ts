@@ -50,7 +50,7 @@ async function registerCommands(): Promise<void> {
       .setName("tickets")
       .setDescription("List open GitHub issues assigned to you in the GFSC org"),
     new SlashCommandBuilder()
-      .setName("share-tickets")
+      .setName("tickets-share")
       .setDescription("Post your open GFSC issues to the channel for others to see"),
   ];
 
@@ -227,11 +227,11 @@ client.on("interactionCreate", async (interaction) => {
 
   if (
     interaction.commandName === "tickets" ||
-    interaction.commandName === "share-tickets"
+    interaction.commandName === "tickets-share"
   ) {
     console.log(`[GitHub] /${interaction.commandName} command received`);
-    // /share-tickets posts visibly to the channel; /tickets is just for you
-    const isPublic = interaction.commandName === "share-tickets";
+    // /tickets-share posts visibly to the channel; /tickets is just for you
+    const isPublic = interaction.commandName === "tickets-share";
     try {
       await interaction.deferReply({ ephemeral: !isPublic });
     } catch (error) {
