@@ -1,9 +1,8 @@
 # Who's who: Discord ↔ GitHub account mapping, maintained by hand.
 # /tickets uses this to work out whose issues to fetch.
 #
-# Add yourself (or anyone else) via PR, same as rss-feeds.txt.
-# "discord" is your Discord username (the unique lowercase one,
-# not your display name / nickname).
+# Add yourself (or anyone else) via PR. "discord" is your Discord
+# username (the unique lowercase one, not your display name / nickname).
 
 - name: Kim
   discord: kimadactyl

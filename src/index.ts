@@ -224,7 +224,7 @@ client.on("interactionCreate", async (interaction) => {
       const username = getGithubUsername(interaction.user.username);
       if (!username) {
         await interaction.editReply(
-          "I don't know your GitHub username. Add yourself to `config/people.yml` in the donna-bot repo (PR welcome, same as rss-feeds.txt).",
+          "I don't know your GitHub username. Add yourself to `config/people.yml` in the donna-bot repo (PR welcome).",
         );
         return;
       }

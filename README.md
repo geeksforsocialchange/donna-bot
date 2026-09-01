@@ -98,4 +98,4 @@ To add a feed, submit a PR adding the feed URL to `config/rss-feeds.txt` (one UR
 
 ### GitHub Tickets
 
-`/tickets` looks up who you are in `config/people.yml` (a hand-maintained Discord ↔ GitHub mapping, edited by PR like the RSS feeds) and lists your open issues in the GFSC org, grouped by repo. It only ever shows the account mapped to your own Discord ID.
+`/tickets` looks up who you are in `config/people.yml` (a hand-maintained Discord ↔ GitHub mapping, edited by PR) and lists your open issues in the GFSC org, grouped by repo. It only ever shows the account mapped to your own Discord username.
