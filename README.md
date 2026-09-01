@@ -45,9 +45,10 @@ RSS_CHANNEL_ID=discord_channel_id
 RSS_FEEDS_PATH=./config/rss-feeds.txt
 RSS_POLL_INTERVAL_MINUTES=5
 
-# GitHub tickets (optional)
+# GitHub tickets
 GITHUB_ORG=geeksforsocialchange
-# Token is optional; raises API rate limits. Public repos work without it.
+# Needs read access to the org's repos (issues + metadata). Without it,
+# issues in private repos are invisible and /tickets returns wrong results.
 GITHUB_TOKEN=
 ```
 
@@ -68,6 +69,7 @@ npm run dev
    - `DISCORD_GUILD_ID`
    - `GOOGLE_SERVICE_ACCOUNT_KEY`
    - `GOOGLE_CALENDAR_ID`
+   - `DONNA_GITHUB_TOKEN` - GitHub token for /tickets (the name differs from the container's `GITHUB_TOKEN` because Actions reserves that secret name)
 3. Push to `main` branch
 
 ## Commands
@@ -99,3 +101,5 @@ To add a feed, submit a PR adding the feed URL to `config/rss-feeds.txt` (one UR
 ### GitHub Tickets
 
 `/tickets` looks up who you are in `config/people.yml` (a hand-maintained Discord ↔ GitHub mapping, edited by PR) and lists open issues assigned to you in the GFSC org, grouped by repo. It only ever shows the account mapped to your own Discord username. Long lists are capped at the 50 most recently updated issues, and the reply says so.
+
+`GITHUB_TOKEN` must be able to read the org's private repos (a fine-grained token with org repo access to Issues and Metadata, read-only, works). Without one the bot can only see public repos, so assigned issues in private repos silently vanish from the results.

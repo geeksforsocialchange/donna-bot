@@ -34,6 +34,7 @@ env:
     - GOOGLE_SERVICE_ACCOUNT_KEY
     - GOOGLE_CALENDAR_ID
     - RSS_CHANNEL_ID
+    - GITHUB_TOKEN
 
 volumes:
   - donna-bot-data:/app/data

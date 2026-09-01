@@ -71,6 +71,11 @@ client.once("ready", async () => {
     `[Bot] RSS sync: ${config.disableRssSync ? "DISABLED" : "enabled"}`,
   );
   console.log(`[Bot] Database: ${config.databasePath}`);
+  if (!config.github.token) {
+    console.warn(
+      "[Bot] GITHUB_TOKEN not set: /tickets cannot see private repos and will return wrong results",
+    );
+  }
   await registerCommands();
   registerEventHandlers(client);
   startRssPoller(client);

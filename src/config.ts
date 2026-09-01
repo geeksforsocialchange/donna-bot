@@ -28,7 +28,8 @@ export const config = {
   },
   github: {
     org: process.env.GITHUB_ORG || "geeksforsocialchange",
-    // Optional: raises API rate limits; public org repos work without it
+    // Needs read access to the org's repos: private-repo issues are
+    // invisible without it, and unauthenticated search is capped at 10/min
     token: process.env.GITHUB_TOKEN || "",
   },
   databasePath: process.env.DATABASE_PATH || "./data/donna.db",
